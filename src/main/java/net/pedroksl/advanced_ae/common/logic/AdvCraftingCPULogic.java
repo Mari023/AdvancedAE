@@ -157,6 +157,9 @@ public class AdvCraftingCPULogic {
         this.usedOps[0] = started - remainingOperations;
     }
 
+    private final KeyCounter expectedOutputs = new KeyCounter();
+    private final KeyCounter expectedContainerItems = new KeyCounter();
+
     /**
      * Try to push patterns into available interfaces, i.e. do the actual crafting execution.
      *
@@ -179,8 +182,8 @@ public class AdvCraftingCPULogic {
             }
 
             var details = task.getKey();
-            var expectedOutputs = new KeyCounter();
-            var expectedContainerItems = new KeyCounter();
+            expectedOutputs.reset();
+            expectedContainerItems.reset();
             // Contains the inputs for the pattern.
             @Nullable
             var craftingContainer = CraftingCpuHelper.extractPatternInputs(
@@ -239,6 +242,8 @@ public class AdvCraftingCPULogic {
                 CraftingCpuHelper.reinjectPatternInputs(inventory, craftingContainer);
             }
         }
+        expectedOutputs.reset();
+        expectedContainerItems.reset();
 
         return pushedPatterns;
     }
