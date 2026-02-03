@@ -155,7 +155,12 @@ public class AdvCraftingCPULogic {
         this.usedOps[2] = this.usedOps[1];
         this.usedOps[1] = this.usedOps[0];
         this.usedOps[0] = started - remainingOperations;
+        this.expectedOutputs.removeZeros();
+        this.expectedContainerItems.removeZeros();
     }
+
+    private final KeyCounter expectedOutputs = new KeyCounter();
+    private final KeyCounter expectedContainerItems = new KeyCounter();
 
     /**
      * Try to push patterns into available interfaces, i.e. do the actual crafting execution.
@@ -179,12 +184,12 @@ public class AdvCraftingCPULogic {
             }
 
             var details = task.getKey();
-            var expectedOutputs = new KeyCounter();
-            var expectedContainerItems = new KeyCounter();
+            this.expectedOutputs.reset();
+            this.expectedContainerItems.reset();
             // Contains the inputs for the pattern.
             @Nullable
             var craftingContainer = CraftingCpuHelper.extractPatternInputs(
-                    details, inventory, level, expectedOutputs, expectedContainerItems);
+                    details, inventory, level, this.expectedOutputs, this.expectedContainerItems);
 
             // Try to push to each provider.
             for (var provider : craftingService.getProviders(details)) {
@@ -200,11 +205,11 @@ public class AdvCraftingCPULogic {
                     energyService.extractAEPower(patternPower, Actionable.MODULATE, PowerMultiplier.CONFIG);
                     pushedPatterns++;
 
-                    for (var expectedOutput : expectedOutputs) {
+                    for (var expectedOutput : this.expectedOutputs) {
                         job.waitingFor.insert(
                                 expectedOutput.getKey(), expectedOutput.getLongValue(), Actionable.MODULATE);
                     }
-                    for (var expectedContainerItem : expectedContainerItems) {
+                    for (var expectedContainerItem : this.expectedContainerItems) {
                         job.waitingFor.insert(
                                 expectedContainerItem.getKey(),
                                 expectedContainerItem.getLongValue(),
@@ -227,10 +232,10 @@ public class AdvCraftingCPULogic {
                     }
 
                     // Prepare next inputs.
-                    expectedOutputs.reset();
-                    expectedContainerItems.reset();
+                    this.expectedOutputs.reset();
+                    this.expectedContainerItems.reset();
                     craftingContainer = CraftingCpuHelper.extractPatternInputs(
-                            details, inventory, level, expectedOutputs, expectedContainerItems);
+                            details, inventory, level, this.expectedOutputs, this.expectedContainerItems);
                 }
             }
 
@@ -239,6 +244,8 @@ public class AdvCraftingCPULogic {
                 CraftingCpuHelper.reinjectPatternInputs(inventory, craftingContainer);
             }
         }
+        expectedOutputs.reset();
+        expectedContainerItems.reset();
 
         return pushedPatterns;
     }
